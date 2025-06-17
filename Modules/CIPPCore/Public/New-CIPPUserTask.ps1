@@ -68,6 +68,37 @@ function New-CIPPUserTask {
         $CopyFrom.Error | ForEach-Object { $Results.Add($_) }
     }
 
+    if ($UserObj.AddToGroups) {
+        $UserObj.AddToGroups | ForEach-Object {
+            $GroupType = $_.addedFields.calculatedGroupType
+            $GroupID = $_.value
+            $GroupName = $_.label
+            Write-Host "About to add $($CreationResults.Username) to $GroupName. Group ID is: $GroupID and type is: $GroupType"
+
+            try {
+                if ($GroupType -eq 'Distribution List' -or $GroupType -eq 'Mail-Enabled Security') {
+                    Write-Host 'Adding to group via Add-DistributionGroupMember'
+                    $Params = @{ Identity = $GroupID; Member = $CreationResults.Username; BypassSecurityGroupManagerCheck = $true }
+                    $null = New-ExoRequest -tenantid $UserObj.tenantFilter -cmdlet 'Add-DistributionGroupMember' -cmdParams $params -UseSystemMailbox $true
+                } else {
+                    Write-Host 'Adding to group via Graph'
+                    $UserBody = [PSCustomObject]@{
+                        '@odata.id' = "https://graph.microsoft.com/beta/directoryObjects/$($CreationResults.UserId)"
+                    }
+                    $UserBodyJSON = ConvertTo-Json -Compress -Depth 10 -InputObject $UserBody
+                    $null = New-GraphPostRequest -uri "https://graph.microsoft.com/beta/groups/$GroupID/members/`$ref" -tenantid $UserObj.tenantFilter -type POST -body $UserBodyJSON -Verbose
+                }
+                Write-LogMessage -headers $Headers -API $APIName -tenant $UserObj.tenantFilter -message "Added $($CreationResults.Username) to $GroupName group" -Sev 'Info'
+                $Results.Add("Success. User has been added to $GroupName")
+            } catch {
+                $ErrorMessage = Get-CippException -Exception $_
+                $Message = "Failed to add user to $GroupName. Error: $($ErrorMessage.NormalizedError)"
+                Write-LogMessage -headers $Headers -API $APIName -tenant $UserObj.tenantFilter -message $Message -Sev 'Error' -LogData $ErrorMessage
+                $Results.Add($Message)
+            }
+        }
+    }
+
     if ($UserObj.setManager) {
         $ManagerResult = Set-CIPPManager -user $CreationResults.Username -Manager $UserObj.setManager.value -TenantFilter $UserObj.tenantFilter -APIName 'Set Manager' -Headers $Headers
         $Results.Add($ManagerResult)

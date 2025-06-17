@@ -64,6 +64,7 @@ function New-CIPPUser {
             Results  = ('Created New User.')
             Username = $UserPrincipalName
             Password = $password
+            UserId   = $GraphRequest.id
         }
     } catch {
         $ErrorMessage = Get-CippException -Exception $_

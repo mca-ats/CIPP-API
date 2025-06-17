@@ -171,7 +171,7 @@ function Invoke-EditUser {
             Write-Host "About to add $($UserObj.userPrincipalName) to $GroupName. Group ID is: $GroupID and type is: $GroupType"
 
             try {
-                if ($GroupType -eq 'Distribution list' -or $GroupType -eq 'Mail-Enabled Security') {
+                if ($GroupType -eq 'Distribution List' -or $GroupType -eq 'Mail-Enabled Security') {
                     Write-Host 'Adding to group via Add-DistributionGroupMember'
                     $Params = @{ Identity = $GroupID; Member = $UserObj.id; BypassSecurityGroupManagerCheck = $true }
                     $null = New-ExoRequest -tenantid $UserObj.tenantFilter -cmdlet 'Add-DistributionGroupMember' -cmdParams $params -UseSystemMailbox $true
@@ -203,7 +203,7 @@ function Invoke-EditUser {
             Write-Host "About to remove $($UserObj.userPrincipalName) from $GroupName. Group ID is: $GroupID and type is: $GroupType"
 
             try {
-                if ($GroupType -eq 'Distribution list' -or $GroupType -eq 'Mail-Enabled Security') {
+                if ($GroupType -eq 'Distribution List' -or $GroupType -eq 'Mail-Enabled Security') {
                     Write-Host 'Removing From group via Remove-DistributionGroupMember'
                     $Params = @{ Identity = $GroupID; Member = $UserObj.id; BypassSecurityGroupManagerCheck = $true }
                     $null = New-ExoRequest -tenantid $UserObj.tenantFilter -cmdlet 'Remove-DistributionGroupMember' -cmdParams $params -UseSystemMailbox $true
